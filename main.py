@@ -1,9 +1,10 @@
 
 #  Python imports
-import threading
-import json, time
+import os, time
+import xlsxwriter 
 import xlsxwriter 
 import pandas as pd
+import openpyxl as op
 from numpy import nan
 import openpyxl as op
 from bs4 import BeautifulSoup
@@ -16,9 +17,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 
 class octopart:
-    count = 0
+    filename = 'results.xlsx'
 
     def scrape(self, partnumber):
+        self.create_excel_file()
         browser = webdriver.Chrome('chromedriver.exe') 
         url = 'https://octopart.com/search?q=' + partnumber + '&currency=USD&specs=0'
         browser.get(url)
@@ -29,6 +31,7 @@ class octopart:
         table = soup.find('table')
         tbody = table.find('tbody')
         trs = tbody.find_all('tr')
+        print('\n\n')
         for tr in trs:
             if str(tr.get_text()).__contains__('Digi-Key') :
                 td = tr.find('td', attrs={'class': 'jsx-3779711368'})
@@ -37,17 +40,23 @@ class octopart:
                 try: price = float(td2.get_text())
                 except: price = 'None'
                 print('Digi-Key:')
+                print('\tpartID = ', partnumber)
                 print('\tStock = ', int(value))
-                print('\tPrice = ', int(price))
+                print('\tPrice = ', price)
+                self.write_to_excel(partnumber, 'Digi-Key', value, price)
+                
             if str(tr.get_text()).__contains__('Mouser') :
                 td = tr.find('td', attrs={'class': 'jsx-3779711368'})
                 value = str(td.get_text()).replace(',','')
                 td2 = tr.find('td', attrs={'class': 'jsx-1795508439'})
                 try: price = float(td2.get_text())
-                except: price = 'None'
+                except: price = 'None'       
                 print('Mouser:')
+                print('\tpartID = ', partnumber)
                 print('\tStock = ', int(value))
-                print('\tPrice = ', int(price))
+                print('\tPrice = ', price)
+                self.write_to_excel(partnumber, 'Mouser', value, price)
+
             if str(tr.get_text()).__contains__('Farnell') :
                 td = tr.find('td', attrs={'class': 'jsx-3779711368'})
                 value = str(td.get_text()).replace(',','')
@@ -55,8 +64,11 @@ class octopart:
                 try: price = float(td2.get_text())
                 except: price = 'None'
                 print('Farnell:')
+                print('\tpartID = ', partnumber)
                 print('\tStock = ', int(value))
-                print('\tPrice = ', int(price))
+                print('\tPrice = ', price)
+                self.write_to_excel(partnumber, 'Farnell', value, price)
+
                 # print('stock value = ', td.get_text())
                 # try:
                 #     a = tr.find('a', attrs={'class': 'jsx-2100737765 click-url'})
@@ -66,8 +78,8 @@ class octopart:
                 #     self.digikey(browser.page_source)
                 #     time.sleep(5)
                 # except: pass
-                break
         time.sleep(5)
+        print('\n\n')
         browser.quit()
 
 
@@ -78,6 +90,25 @@ class octopart:
         stocks = str(stockdiv.get_text()).split(' ')
         stock_value = int(stocks[0])
         print('stock_value = ', stock_value)
+
+    def create_excel_file(self):
+        # creating the file for the first time 
+        if not os.path.exists(self.filename):
+            workbook = xlsxwriter.Workbook(self.filename)
+            worksheet = workbook.add_worksheet("data")
+            workbook.close()
+            wb = op.load_workbook(self.filename, False)
+            ws = wb['data']
+            ws.append(['Part Number','Website', 'Stock', 'Price'])
+            wb.save(self.filename)
+            wb.close()
+
+    def write_to_excel(self, partnumber, website, stock, price):
+        wb = op.load_workbook(self.filename, False)
+        ws = wb['data']
+        ws.append([partnumber, website, stock, price])
+        wb.save(self.filename)
+        wb.close()
 
 
 def selected_countries():
@@ -94,7 +125,6 @@ if __name__ == '__main__':
     print(part_list)   
     for part in part_list:
         obj.scrape(part)
-        break
 
 """
 
