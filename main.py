@@ -11,11 +11,8 @@ from bs4 import BeautifulSoup
 
 # selenium imports
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from random_user_agent.user_agent import UserAgent
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from random_user_agent.params import SoftwareName, OperatingSystem
 
 
